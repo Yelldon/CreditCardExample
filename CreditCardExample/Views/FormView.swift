@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct FormView: View {
-    @State var creditCardState = CreditCardState.shared
-    @State var isFlipped: Bool = false
+    @Environment(CreditCardState.self) var creditCardState
     
     @FocusState private var focus: FieldType?
     @ScaledMetric(relativeTo: .body) var scaledPadding: CGFloat = 8
@@ -19,6 +18,8 @@ struct FormView: View {
     
     var body: some View {
         ZStack {
+            @Bindable var bindState = creditCardState
+            
             GeometryReader { geometry in
                 ScrollView {
                     ZStack {
@@ -49,17 +50,15 @@ struct FormView: View {
                         .zIndex(4)
                         
                         VStack {
-                            CreditCardView(
-                                isFlipped: isFlipped
-                            )
-                            .rotationEffect(
-                                .degrees(cardRotation)
-                            )
-                            .offset(
-                                y: isFormSubmitting ? geometry.size.height / 2 - 80 : 0
-                            )
-                            .transition(.scale)
-                            .zIndex(3)
+                            CreditCardView()
+                                .rotationEffect(
+                                    .degrees(cardRotation)
+                                )
+                                .offset(
+                                    y: isFormSubmitting ? geometry.size.height / 2 - 80 : 0
+                                )
+                                .transition(.scale)
+                                .zIndex(3)
                         }
                         .animation(.spring, value: isFormSubmitting)
                     }
@@ -86,7 +85,7 @@ struct FormView: View {
                             Group {
                                 CustomField(
                                     fieldType: .nameOnCard,
-                                    text: $creditCardState.nameOnCard,
+                                    text: $bindState.nameOnCard,
                                     placeholder: "Name on Card",
                                     onEditingChanged: { isEditing in
                                         if isEditing {
@@ -99,7 +98,7 @@ struct FormView: View {
                                 
                                 CustomField(
                                     fieldType: .cardNumber,
-                                    text: $creditCardState.cardNumber,
+                                    text: $bindState.cardNumber,
                                     placeholder: "Card Number",
                                     onEditingChanged: { isEditing in
                                         if isEditing {
@@ -113,10 +112,10 @@ struct FormView: View {
                                 HStack {
                                     CustomField(
                                         fieldType: .cvv,
-                                        text: $creditCardState.cvv,
+                                        text: $bindState.cvv,
                                         placeholder: "CVV",
                                         onEditingChanged: { isEditing in
-                                            isFlipped.toggle()
+                                            creditCardState.flipCard()
                                             if isEditing {
                                                 focus = .cvv
                                             }
@@ -129,7 +128,7 @@ struct FormView: View {
                                     
                                     CustomField(
                                         fieldType: .expirationDate,
-                                        text: $creditCardState.expirationDate,
+                                        text: $bindState.expirationDate,
                                         placeholder: "Expiration",
                                         onEditingChanged: { isEditing in
                                             if isEditing {
@@ -232,4 +231,5 @@ enum CreditCardType {
 
 #Preview {
     FormView()
+        .environment(MockData.emptyCreditCardState())
 }

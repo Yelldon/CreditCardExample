@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct CreditCardExampleApp: App {
+    @State var creditCardState = CreditCardState()
+    
     var body: some Scene {
         WindowGroup {
             FormView()
+                .environment(creditCardState)
         }
     }
 }

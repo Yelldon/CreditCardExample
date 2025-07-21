@@ -9,14 +9,13 @@ import Foundation
 import Observation
 
 @Observable
-class CreditCardState {
-    static let shared = CreditCardState()
-     
+final class CreditCardState {
     var cardNumber: String = ""
     var expirationDate: String = ""
     var cvv: String = ""
     var nameOnCard: String = ""
     
+    var isFlipped: Bool = false
     var isSubmitting: Bool = false
     var isComplete: Bool = false
 }
@@ -71,6 +70,10 @@ extension CreditCardState {
         
         // Generate random CVV
         cvv = String(format: "%03d", Int.random(in: 100...999))
+    }
+    
+    func flipCard() {
+        isFlipped.toggle()
     }
     
     func formSubmit() {

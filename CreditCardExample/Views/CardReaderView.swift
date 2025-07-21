@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct CardReaderView: View {
-    @State var creditCardState = CreditCardState.shared
+    @Environment(CreditCardState.self) var creditCardState
+    
     @State var submitionIndex: Int = 0
     
     var body: some View {
@@ -80,10 +81,6 @@ extension CardReaderView {
 }
 
 #Preview {
-    @Previewable @State var creditCardState = CreditCardState()
-
-    CardReaderView(creditCardState: creditCardState)
-        .onAppear {
-            creditCardState.isSubmitting = true
-        }
+    CardReaderView()
+        .environment(MockData.baseCreditCardState())
 }
