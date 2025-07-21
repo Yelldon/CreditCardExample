@@ -6,11 +6,11 @@
 //
 
 final class MockData {
-    static func emptyCreditCardState() -> CreditCardState {
+    static var emptyCreditCardState: CreditCardState {
        return CreditCardState()
     }
     
-    static func baseCreditCardState() -> CreditCardState {
+    static var baseCreditCardState: CreditCardState {
         let state = CreditCardState()
         state.cardNumber = "4111 5678 9012 3456"
         state.nameOnCard = "John Doe"
@@ -20,7 +20,7 @@ final class MockData {
         return state
     }
     
-    static func flippedCreditCardState() -> CreditCardState {
+    static var flippedCreditCardState: CreditCardState {
         let state = CreditCardState()
         state.cardNumber = "4111 5678 9012 3456"
         state.nameOnCard = "John Doe"
@@ -31,7 +31,7 @@ final class MockData {
         return state
     }
     
-    static func completeCreditCardState() -> CreditCardState {
+    static var completeCreditCardState: CreditCardState {
         let state = CreditCardState()
         state.isComplete = true
         

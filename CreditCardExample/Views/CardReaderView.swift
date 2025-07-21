@@ -82,5 +82,5 @@ extension CardReaderView {
 
 #Preview {
     CardReaderView()
-        .environment(MockData.baseCreditCardState())
+        .environment(MockData.baseCreditCardState)
 }

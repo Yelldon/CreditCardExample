@@ -206,30 +206,22 @@ extension FormView {
     }
 }
 
-struct ConditionalPositionModifier: ViewModifier {
+fileprivate struct ConditionalPositionModifier: ViewModifier {
     let shouldApply: Bool
     let x: CGFloat
     let y: CGFloat
     
     func body(content: Content) -> some View {
         if shouldApply {
-            content.position(x: x, y: y)
+            content
+                .position(x: x, y: y)
         } else {
             content
         }
     }
 }
 
-enum CreditCardType {
-    case visa
-    case mastercard
-    case americanExpress
-    case dinersClub
-    case discover
-    case unknown
-}
-
 #Preview {
     FormView()
-        .environment(MockData.emptyCreditCardState())
+        .environment(MockData.emptyCreditCardState)
 }

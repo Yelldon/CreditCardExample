@@ -340,13 +340,13 @@ extension CreditCardView {
 
 #Preview("Initial View") {
     CreditCardView()
-        .environment(MockData.emptyCreditCardState())
+        .environment(MockData.emptyCreditCardState)
     
     CreditCardView()
-        .environment(MockData.flippedCreditCardState())
+        .environment(MockData.flippedCreditCardState)
 }
 
 #Preview("Set View") {
     CreditCardView()
-        .environment(MockData.baseCreditCardState())
+        .environment(MockData.baseCreditCardState)
 }

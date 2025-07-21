@@ -50,5 +50,5 @@ extension CompletionModalView {
 
 #Preview {
     CompletionModalView()
-        .environment(MockData.completeCreditCardState())
+        .environment(MockData.completeCreditCardState)
 }

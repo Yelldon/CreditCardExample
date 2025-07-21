@@ -202,11 +202,3 @@ extension CustomField.Coordinator {
         }
     }
 }
-
-// MARK: Field Types
-enum FieldType {
-    case cardNumber
-    case expirationDate
-    case cvv
-    case nameOnCard
-}
