@@ -86,7 +86,7 @@ struct CreditCardView: View {
                     }
                 }
             }
-            .dynamicTypeSize(.large ... .large)
+            .dynamicTypeSize(.large)
             .padding(.vertical)
             .shadow(radius: 4, x: 0, y: 6)
             .transition(.opacity)

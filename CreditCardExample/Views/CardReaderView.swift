@@ -70,7 +70,6 @@ extension CardReaderView {
     func runSubmitLight(index: Int) {
         if index < 4 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                debugPrint("We ran the submit light, index is \(index)")
                 submitionIndex += 1
                 runSubmitLight(index: submitionIndex)
             }

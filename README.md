@@ -7,6 +7,5 @@ This app takes input from the user, and then, instead of a normal spinner or loa
 
 ## Some things yet to do
 - Add actual validation to the user input
-- Make this more UI friendly for interfaces other than just iOS
 
 <sub>**DISCLAIMER:** This app doesn't touch an API outside of the app at all, nor does it collect anything from the user. This a strictly for fun, to show off some fun animations and show what might be possible. That being said, never use actual credit card information, even on an example app like this.</sub>

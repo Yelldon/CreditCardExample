@@ -15,6 +15,5 @@ extension View {
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(focused ? .blue : .secondary, lineWidth: 2)
             )
-            .frame(maxHeight: 40)
     }
 }
