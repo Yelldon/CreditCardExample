@@ -21,7 +21,6 @@ struct FormView: View {
         ZStack {
             if isWideLayout {
                 horizontalLayout
-                    .padding(.top)
             } else {
                 verticalLayout
             }
@@ -133,6 +132,7 @@ private extension FormView {
                 }
                 .scrollDisabled(isFormSubmitting)
             }
+            .padding(.top)
         }
     }
     
@@ -180,36 +180,11 @@ private extension FormView {
             )
             .focused($focus, equals: .cardNumber)
             .fieldBorder(focused: focus == .cardNumber)
+            .environment(creditCardState)
                 
             ViewThatFits(in: .horizontal) {
                 HStack {
-                    CustomField(
-                        fieldType: .cvv,
-                        text: $bindState.cvv,
-                        placeholder: "CVV",
-                        onEditingChanged: { isEditing in
-                            creditCardState.flipCard()
-                            if isEditing {
-                                focus = .cvv
-                            }
-                        }
-                    )
-                    .focused($focus, equals: .cvv)
-                    .fieldBorder(focused: focus == .cvv)
-                    .padding(.trailing, 8)
-                    
-                    CustomField(
-                        fieldType: .expirationDate,
-                        text: $bindState.expirationDate,
-                        placeholder: "Expiration",
-                        onEditingChanged: { isEditing in
-                            if isEditing {
-                                focus = .expirationDate
-                            }
-                        }
-                    )
-                    .focused($focus, equals: .expirationDate)
-                    .fieldBorder(focused: focus == .expirationDate)
+                    horizontalForm
                 }
                 
                 VStack(spacing: 18) {
@@ -273,6 +248,7 @@ private extension FormView {
         )
         .focused($focus, equals: .cvv)
         .fieldBorder(focused: focus == .cvv)
+        .environment(creditCardState)
         
         CustomField(
             fieldType: .expirationDate,

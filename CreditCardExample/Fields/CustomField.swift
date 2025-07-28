@@ -9,6 +9,8 @@ import SwiftUI
 import UIKit
 
 struct CustomField: UIViewRepresentable {
+    @Environment(CreditCardState.self) var creditCardState: CreditCardState?
+    
     let fieldType: FieldType
     @Binding var text: String
     var placeholder: String
@@ -89,15 +91,17 @@ extension CustomField.Coordinator {
         guard let text = textField.text else { return }
         let oldText = parent.text
         var newCursorOffset: Int?
+        let creditCardType: CreditCardType = parent.creditCardState?.checkCreditCardType ?? .unknown
         
         switch parent.fieldType {
         case .cardNumber:
-            // Filter to numbers only and limit to 16 digits
+            // Filter to numbers only
             let digits = text.filter { $0.isNumber }
+            let maxDigits = maxDigitsForCardType(creditCardType)
             
-            // If we already have 16 digits, don't allow more
-            if digits.count > 16 {
-                debugPrint("Too many digits")
+            // If we already have maximum digits for this card type, don't allow more
+            if digits.count > maxDigits {
+                debugPrint("Too many digits for \(creditCardType)")
                 textField.text = oldText // Restore previous valid text
                 return
             }
@@ -110,10 +114,8 @@ extension CustomField.Coordinator {
             let textBeforeCursor = String(text.prefix(cursorOffset))
             let digitsBeforeCursor = textBeforeCursor.filter { $0.isNumber }.count
             
-            // Format the text with spaces
-            let formatted = digits.enumerated().map { index, char in
-                index > 0 && index % 4 == 0 ? " \(char)" : "\(char)"
-            }.joined()
+            // Format the text based on card type
+            let formatted = formatCardNumber(digits, for: creditCardType)
             
             // Calculate new cursor position based on digit count
             var calculatedCursorOffset = 0
@@ -178,7 +180,11 @@ extension CustomField.Coordinator {
             parent.text = formatted
             textField.text = formatted
         case .cvv:
-            let formatted = String(text.filter { $0.isNumber }.prefix(3))
+            // Get the current card type from the card number to determine CVV length
+            let digits = text.filter { $0.isNumber }
+            let maxCvvLength = cvvLengthForCardType(creditCardType)
+            let formatted = String(digits.prefix(maxCvvLength))
+            
             parent.text = formatted
             textField.text = formatted
         case .nameOnCard:
@@ -200,5 +206,69 @@ extension CustomField.Coordinator {
                 }
             }
         }
+    }
+    
+    // MARK: Card Type Detection and Formatting
+    private func cvvLengthForCardType(_ cardType: CreditCardType) -> Int {
+        switch cardType {
+        case .americanExpress:
+            return 4 // American Express uses 4-digit CVV
+        default:
+            return 3 // Most cards use 3-digit CVV
+        }
+    }
+    
+    private func maxDigitsForCardType(_ cardType: CreditCardType) -> Int {
+        switch cardType {
+        case .americanExpress:
+            return 15
+        case .dinersClub:
+            return 14
+        case .visa, .mastercard, .discover:
+            return 16
+        case .unknown:
+            return 16 // Default to 16 for unknown cards
+        }
+    }
+    
+    private func formatCardNumber(_ digits: String, for cardType: CreditCardType) -> String {
+        switch cardType {
+        case .americanExpress:
+            // American Express: 4-6-5 format
+            return formatAmericanExpress(digits)
+        case .dinersClub:
+            // Diners Club: 4-6-4 format
+            return formatDinersClub(digits)
+        case .visa, .mastercard, .discover, .unknown:
+            // Standard: 4-4-4-4 format
+            return formatStandard(digits)
+        }
+    }
+    
+    private func formatStandard(_ digits: String) -> String {
+        // Format as 4-4-4-4
+        return digits.enumerated().map { index, char in
+            index > 0 && index % 4 == 0 ? " \(char)" : "\(char)"
+        }.joined()
+    }
+    
+    private func formatAmericanExpress(_ digits: String) -> String {
+        // Format as 4-6-5 (spaces after positions 4 and 10)
+        return digits.enumerated().map { index, char in
+            if index == 4 || index == 10 {
+                return " \(char)"
+            }
+            return "\(char)"
+        }.joined()
+    }
+    
+    private func formatDinersClub(_ digits: String) -> String {
+        // Format as 4-6-4 (spaces after positions 4 and 10)
+        return digits.enumerated().map { index, char in
+            if index == 4 || index == 10 {
+                return " \(char)"
+            }
+            return "\(char)"
+        }.joined()
     }
 }

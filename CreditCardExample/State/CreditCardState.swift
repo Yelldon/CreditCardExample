@@ -20,7 +20,41 @@ final class CreditCardState {
     var isComplete: Bool = false
 }
 
+// MARK: Helpers
 extension CreditCardState {
+    /// Check the credit card type
+    var checkCreditCardType: CreditCardType {
+        let digits = cardNumber.filter { $0.isNumber }
+        guard !digits.isEmpty else { return .unknown }
+        
+        let firstDigit = String(digits.prefix(1))
+        let firstTwo = String(digits.prefix(2))
+        let firstFour = String(digits.prefix(4))
+        
+        switch firstDigit {
+        case "4":
+            return .visa
+        case "5":
+            if ["51", "52", "53", "54", "55"].contains(firstTwo) {
+                return .mastercard
+            }
+        case "3":
+            if ["34", "37"].contains(firstTwo) {
+                return .americanExpress
+            } else if firstTwo == "30" || firstTwo == "36" || firstTwo == "38" {
+                return .dinersClub
+            }
+        case "6":
+            if firstFour == "6011" || firstTwo == "65" {
+                return .discover
+            }
+        default:
+            return .unknown
+        }
+        
+        return .unknown
+    }
+    
     func generateRandomCreditCard() {
         let cardTypes: [CreditCardType] = [.visa, .mastercard, .americanExpress, .discover, .dinersClub]
         let randomType = cardTypes.randomElement() ?? .visa

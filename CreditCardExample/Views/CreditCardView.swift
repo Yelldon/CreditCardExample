@@ -55,7 +55,7 @@ struct CreditCardView: View {
                                         .offset(x: -2, y: -3)
                                         .padding(8)
                                 }
-                                .animation(.easeInOut.speed(1.5), value: checkCreditCardType)
+                                .animation(.easeInOut.speed(1.5), value: checkCardType)
                             }
                         }
                         .offset(x: 20, y: 35)
@@ -119,7 +119,7 @@ extension CreditCardView {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(.gray, lineWidth: 1)
             )
-            .animation(.easeInOut.speed(1.5), value: checkCreditCardType)
+            .animation(.easeInOut.speed(1.5), value: checkCardType)
             .overlay(alignment: .topLeading) {
                 if !isBack {
                     chipView
@@ -199,12 +199,16 @@ extension CreditCardView {
 
 // MARK: Variables
 extension CreditCardView {
+    var checkCardType: CreditCardType {
+        creditCardState.checkCreditCardType
+    }
+    
     var isFlipped: Bool {
         creditCardState.isFlipped
     }
     
     var creditCardColor: Color {
-        switch checkCreditCardType {
+        switch checkCardType {
             case .visa: return .blue
             case .mastercard: return .orange
             case .americanExpress: return .cyan
@@ -256,44 +260,12 @@ extension CreditCardView {
         let formatted = String(result)
         return "\(formatted.prefix(2))/\(formatted.suffix(2))"
     }
-    
-    var checkCreditCardType: CreditCardType {
-        let digits = creditCardState.cardNumber.filter { $0.isNumber }
-        guard !digits.isEmpty else { return .unknown }
-        
-        let firstDigit = String(digits.prefix(1))
-        let firstTwo = String(digits.prefix(2))
-        let firstFour = String(digits.prefix(4))
-        
-        switch firstDigit {
-        case "4":
-            return .visa
-        case "5":
-            if ["51", "52", "53", "54", "55"].contains(firstTwo) {
-                return .mastercard
-            }
-        case "3":
-            if ["34", "37"].contains(firstTwo) {
-                return .americanExpress
-            } else if firstTwo == "30" || firstTwo == "36" || firstTwo == "38" {
-                return .dinersClub
-            }
-        case "6":
-            if firstFour == "6011" || firstTwo == "65" {
-                return .discover
-            }
-        default:
-            return .unknown
-        }
-        
-        return .unknown
-    }
 }
 
 // MARK: Views
 extension CreditCardView {
     @ViewBuilder func cardTypeImage() -> some View {
-        switch checkCreditCardType {
+        switch checkCardType {
         case .visa:
             cardTypeBaseImage("VisaImage")
         case .mastercard:
