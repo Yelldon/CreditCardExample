@@ -14,7 +14,6 @@ struct CustomField: UIViewRepresentable {
     let fieldType: FieldType
     @Binding var text: String
     var placeholder: String
-    var onValidationCheck: (FieldErrors?) -> Void
     var onEditingChanged: (Bool) -> Void
     
     func createKeyboardType() -> UIKeyboardType {
@@ -73,7 +72,7 @@ struct CustomField: UIViewRepresentable {
         }
 
         @objc func textFieldDidChange(_ textField: UITextField) {
-            handleFieldType(parent, textField: textField)
+            handleFieldType(textField)
         }
         
         func textFieldDidBeginEditing(_ textField: UITextField) {
@@ -88,7 +87,7 @@ struct CustomField: UIViewRepresentable {
 
 // MARK: Handle Fields
 extension CustomField.Coordinator {
-    func handleFieldType(_ parent: CustomField, textField: UITextField) {
+    func handleFieldType(_ textField: UITextField) {
         guard let text = textField.text else { return }
         
         let creditCardType: CreditCardType = parent.creditCardState.checkCreditCardType
@@ -140,13 +139,6 @@ extension CustomField.Coordinator {
             
             newCursorOffset = calculatedCursorOffset
             
-            // Validation checks
-            if text.isEmpty {
-                parent.onValidationCheck(.required)
-            } else {
-                parent.onValidationCheck(nil)
-            }
-            
             // Update the binding and text field
             parent.text = formatted
             textField.text = formatted
@@ -154,7 +146,7 @@ extension CustomField.Coordinator {
             let digits = text.filter { $0.isNumber }.prefix(4)
             let currentText = parent.text
             
-            // Handle backspace on the "/"
+            // Handle backspace on the forward slash (/)
             if text.count < currentText.count && currentText.contains("/") && !text.contains("/") {
                 // User backspaced on the slash, remove last digit and slash
                 let digitsOnly = currentText.filter { $0.isNumber }
@@ -173,6 +165,7 @@ extension CustomField.Coordinator {
             }
             
             var formatted: String
+            
             if digits.count >= 2 {
                 let month = String(digits.prefix(2))
                 let year = String(digits.dropFirst(2))
@@ -186,13 +179,6 @@ extension CustomField.Coordinator {
                 formatted = String(digits)
             }
             
-            // Validation checks
-            if text.isEmpty {
-                parent.onValidationCheck(.required)
-            } else {
-                parent.onValidationCheck(nil)
-            }
-            
             parent.text = formatted
             textField.text = formatted
         case .cvv:
@@ -201,13 +187,6 @@ extension CustomField.Coordinator {
             let maxCvvLength = cvvLengthForCardType(creditCardType)
             let formatted = String(digits.prefix(maxCvvLength))
             
-            // Validation checks
-            if text.isEmpty {
-                parent.onValidationCheck(.required)
-            } else {
-                parent.onValidationCheck(nil)
-            }
-            
             parent.text = formatted
             textField.text = formatted
         case .nameOnCard:
@@ -215,13 +194,6 @@ extension CustomField.Coordinator {
                 debugPrint("String too long")
                 textField.text = oldText // Restore previous valid text
                 return
-            }
-            
-            // Validation checks
-            if text.isEmpty {
-                parent.onValidationCheck(.required)
-            } else {
-                parent.onValidationCheck(nil)
             }
             
             parent.text = text
@@ -237,6 +209,91 @@ extension CustomField.Coordinator {
             }
         }
     }
+
+// Keeping these for reference until I add in the rest of the validation
+//    private func validateFieldContent(_ text: String, for fieldType: FieldType, cardType: CreditCardType) -> FieldErrors? {
+//        switch fieldType {
+//        case .cardNumber:
+//            return validateCardNumber(text, cardType: cardType)
+//        case .expirationDate:
+//            return validateExpirationDate(text)
+//        case .cvv:
+//            return validateCVV(text, cardType: cardType)
+//        case .nameOnCard:
+//            return validateNameOnCard(text)
+//        }
+//    }
+//    
+//    private func validateCardNumber(_ text: String, cardType: CreditCardType) -> FieldErrors? {
+//        let digits = text.filter { $0.isNumber }
+//        
+//        if digits.isEmpty {
+//            return .required
+//        }
+//        
+//        let expectedLength = maxDigitsForCardType(cardType)
+//        if digits.count < expectedLength {
+//            return .notEnoughDigits
+//        }
+//        
+//        return nil // Valid
+//    }
+//    
+//    private func validateExpirationDate(_ text: String) -> FieldErrors? {
+//        let digits = text.filter { $0.isNumber }
+//        
+//        if digits.isEmpty {
+//            return .required
+//        }
+//        
+//        if digits.count < 4 {
+//            return .notEnoughDigits
+//        }
+//        
+//        let month = Int(String(digits.prefix(2))) ?? 0
+//        let year = Int(String(digits.suffix(2))) ?? 0
+//        let currentYear = Calendar.current.component(.year, from: Date()) % 100
+//        let currentMonth = Calendar.current.component(.month, from: Date())
+//        
+//        if month < 1 || month > 12 {
+//            return .dateInvalid
+//        }
+//        
+//        if year < currentYear || (year == currentYear && month < currentMonth) {
+//            return .dateExpired
+//        }
+//        
+//        return nil // Valid
+//    }
+//    
+//    private func validateCVV(_ text: String, cardType: CreditCardType) -> FieldErrors? {
+//        let digits = text.filter { $0.isNumber }
+//        
+//        if digits.isEmpty {
+//            return .required
+//        }
+//        
+//        let expectedLength = cvvLengthForCardType(cardType)
+//        if digits.count < expectedLength {
+//            return .notEnoughDigits
+//        }
+//        
+//        return nil // Valid
+//    }
+//    
+//    private func validateNameOnCard(_ text: String) -> FieldErrors? {
+//        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+//        
+//        if trimmed.isEmpty {
+//            return .required
+//        }
+//        
+//        if trimmed.count < 2 {
+//            return .notEnoughDigits
+//        }
+//        
+//        return nil // Valid
+//    }
     
     // MARK: Card Type Detection and Formatting
     private func cvvLengthForCardType(_ cardType: CreditCardType) -> Int {

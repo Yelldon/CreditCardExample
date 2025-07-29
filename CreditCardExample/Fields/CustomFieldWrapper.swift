@@ -11,38 +11,62 @@ struct CustomFieldWrapper: View {
     @Environment(CreditCardState.self) var creditCardState
     
     let fieldType: FieldType
+    var onValidation: ((FieldType, Bool) -> Void)?
     var onEditingChanged: ((Bool) -> Void)?
     
     @State var focused: Bool = false
-    @State var error: FieldErrors?
+    @State var error: FieldErrors? = .initial
+    
+    @ScaledMetric(relativeTo: .caption) var scaledOffset: CGFloat = 8
     
     var body: some View {
-        VStack(alignment: .leading) {
-            CustomField(
-                fieldType: fieldType,
-                text: text,
-                placeholder: placeholder,
-                onValidationCheck: { validation in
-                    let formValidationValue = validation == nil ? true : false
-                    
-                    error = validation
-                    creditCardState.validateForm(formValidationValue, for: fieldType)
-                },
-                onEditingChanged: { isEditing in
-                    onEditingChanged?(isEditing)
-                    focused = isEditing
-                }
-            )
-            .fieldBorder(borderColor: borderColor)
-            
-            if hasError {
+        ZStack(alignment: .topLeading) {
+            VStack(alignment: .leading) {
+                CustomField(
+                    fieldType: fieldType,
+                    text: text,
+                    placeholder: placeholder,
+                    onEditingChanged: { isEditing in
+                        onEditingChanged?(isEditing)
+                        focused = isEditing
+                    }
+                )
+                .fieldBorder(borderColor: borderColor)
+                
                 ZStack {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                        .font(.caption)
+                    if hasError {
+                        Text(errorMessage)
+                            .padding(.horizontal, 6)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.25)
+                            .transition(
+                                AnyTransition.move(edge: .top)
+                                    .combined(with: .opacity)
+                            )
+                    }
+                }
+                .animation(.easeInOut.speed(3), value: hasError)
+            }
+            .onChange(of: text.wrappedValue) { _, newValue in
+                guard !newValue.isEmpty else {
+                    error = .required
+                    onValidation?(fieldType, true)
+                    return
+                }
+                
+                error = nil
+                onValidation?(fieldType, false)
+            }
+            .onChange(of: creditCardState.isComplete) { oldValue, newValue in
+                if oldValue && !newValue {
+                    error = .initial
                 }
             }
         }
+        .animation(.easeInOut, value: hasError)
     }
 }
 
@@ -84,11 +108,17 @@ extension CustomFieldWrapper {
     }
     
     var hasError: Bool {
-        error != nil
+        guard error != .initial else {
+            return false
+        }
+        
+        return error != nil
     }
     
     var errorMessage: String {
         switch error {
+        case .initial:
+            return ""
         case .required:
             return "\(placeholder) is required."
         default:
@@ -98,18 +128,26 @@ extension CustomFieldWrapper {
 }
 
 #Preview {
-    @Previewable var hasError = true
-    
-    CustomFieldWrapper(
-        fieldType: .nameOnCard
-    )
-    .environment(MockData.baseCreditCardState)
-    .padding()
+    @Previewable var focused = true
+    @Previewable var error: FieldErrors = .required
+
+    VStack(spacing: 24) {
+        CustomFieldWrapper(
+            fieldType: .nameOnCard
+        )
+        .environment(MockData.baseCreditCardState)
         
-    CustomFieldWrapper(
-        fieldType: .nameOnCard,
-        error: .required
-    )
-    .environment(MockData.baseCreditCardState)
+        CustomFieldWrapper(
+            fieldType: .nameOnCard,
+            focused: focused
+        )
+        .environment(MockData.baseCreditCardState)
+                
+        CustomFieldWrapper(
+            fieldType: .nameOnCard,
+            error: error
+        )
+        .environment(MockData.emptyCreditCardState)
+    }
     .padding()
 }

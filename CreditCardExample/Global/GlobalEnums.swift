@@ -25,6 +25,7 @@ enum FieldType {
 
 /// Field Errors
 enum FieldErrors {
+    case initial
     case required
     case notEnoughDigits
     case dateExpired
