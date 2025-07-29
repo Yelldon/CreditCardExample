@@ -22,3 +22,11 @@ enum FieldType {
     case cvv
     case nameOnCard
 }
+
+/// Field Errors
+enum FieldErrors {
+    case required
+    case notEnoughDigits
+    case dateExpired
+    case dateInvalid
+}

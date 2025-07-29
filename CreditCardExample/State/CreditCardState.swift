@@ -15,6 +15,11 @@ final class CreditCardState {
     var cvv: String = ""
     var nameOnCard: String = ""
     
+    var validCardNumber: Bool = false
+    var validExpirationDate: Bool = false
+    var validCvv: Bool = false
+    var validNameOnCard: Bool = false
+    
     var isFlipped: Bool = false
     var isSubmitting: Bool = false
     var isComplete: Bool = false
@@ -55,6 +60,7 @@ extension CreditCardState {
         return .unknown
     }
     
+    /// Generate a random credit card number and related information
     func generateRandomCreditCard() {
         let cardTypes: [CreditCardType] = [.visa, .mastercard, .americanExpress, .discover, .dinersClub]
         let randomType = cardTypes.randomElement() ?? .visa
@@ -103,7 +109,12 @@ extension CreditCardState {
         expirationDate = String(format: "%02d/%02d", randomMonth, randomYear)
         
         // Generate random CVV
-        cvv = String(format: "%03d", Int.random(in: 100...999))
+        if randomType == .americanExpress {
+            cvv = String(format: "%04d", Int.random(in: 100...999))
+        } else {
+            cvv = String(format: "%03d", Int.random(in: 100...999))
+        }
+        
     }
     
     func flipCard() {
@@ -112,6 +123,10 @@ extension CreditCardState {
     
     func formSubmit() {
         isSubmitting = true
+    }
+    
+    func formComplete() {
+        isComplete = true
     }
     
     func resetFormSubmit() {
@@ -124,4 +139,31 @@ extension CreditCardState {
         cvv = ""
         nameOnCard = ""
     }
+    
+    var isFormInvalid: Bool {
+        !validCardNumber &&
+        !validExpirationDate &&
+        !validCvv &&
+        !validNameOnCard
+    }
+    
+    func validateForm(_ value: Bool, for fieldType: FieldType) {
+        switch fieldType {
+        case .cardNumber:
+            validCardNumber = value
+        case .cvv:
+            validCvv = value
+        case .expirationDate:
+            validExpirationDate = value
+        case .nameOnCard:
+            validNameOnCard = value
+        }
+    }
 }
+
+//fileprivate extension CreditCardState {
+struct FieldValidator {
+    let isValid: Bool
+    let reason: String?
+}
+//}

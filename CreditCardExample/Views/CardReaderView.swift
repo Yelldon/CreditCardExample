@@ -68,13 +68,16 @@ extension CardReaderView {
 // MARK: Functions
 extension CardReaderView {
     func runSubmitLight(index: Int) {
+        // This would normally be an API request to submit the data
+        // But since this is just "mock data", it's all happening after an animation completes
         if index < 4 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 submitionIndex += 1
                 runSubmitLight(index: submitionIndex)
             }
         } else if index == 4 {
-            creditCardState.isComplete.toggle()
+            // This would normally happen when the API completes successfully
+            creditCardState.formComplete()
         }
     }
 }

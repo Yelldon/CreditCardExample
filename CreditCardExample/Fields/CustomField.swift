@@ -9,11 +9,12 @@ import SwiftUI
 import UIKit
 
 struct CustomField: UIViewRepresentable {
-    @Environment(CreditCardState.self) var creditCardState: CreditCardState?
+    @Environment(CreditCardState.self) var creditCardState: CreditCardState
     
     let fieldType: FieldType
     @Binding var text: String
     var placeholder: String
+    var onValidationCheck: (FieldErrors?) -> Void
     var onEditingChanged: (Bool) -> Void
     
     func createKeyboardType() -> UIKeyboardType {
@@ -89,9 +90,10 @@ struct CustomField: UIViewRepresentable {
 extension CustomField.Coordinator {
     func handleFieldType(_ parent: CustomField, textField: UITextField) {
         guard let text = textField.text else { return }
+        
+        let creditCardType: CreditCardType = parent.creditCardState.checkCreditCardType
         let oldText = parent.text
         var newCursorOffset: Int?
-        let creditCardType: CreditCardType = parent.creditCardState?.checkCreditCardType ?? .unknown
         
         switch parent.fieldType {
         case .cardNumber:
@@ -138,6 +140,13 @@ extension CustomField.Coordinator {
             
             newCursorOffset = calculatedCursorOffset
             
+            // Validation checks
+            if text.isEmpty {
+                parent.onValidationCheck(.required)
+            } else {
+                parent.onValidationCheck(nil)
+            }
+            
             // Update the binding and text field
             parent.text = formatted
             textField.text = formatted
@@ -177,6 +186,13 @@ extension CustomField.Coordinator {
                 formatted = String(digits)
             }
             
+            // Validation checks
+            if text.isEmpty {
+                parent.onValidationCheck(.required)
+            } else {
+                parent.onValidationCheck(nil)
+            }
+            
             parent.text = formatted
             textField.text = formatted
         case .cvv:
@@ -185,6 +201,13 @@ extension CustomField.Coordinator {
             let maxCvvLength = cvvLengthForCardType(creditCardType)
             let formatted = String(digits.prefix(maxCvvLength))
             
+            // Validation checks
+            if text.isEmpty {
+                parent.onValidationCheck(.required)
+            } else {
+                parent.onValidationCheck(nil)
+            }
+            
             parent.text = formatted
             textField.text = formatted
         case .nameOnCard:
@@ -192,6 +215,13 @@ extension CustomField.Coordinator {
                 debugPrint("String too long")
                 textField.text = oldText // Restore previous valid text
                 return
+            }
+            
+            // Validation checks
+            if text.isEmpty {
+                parent.onValidationCheck(.required)
+            } else {
+                parent.onValidationCheck(nil)
             }
             
             parent.text = text

@@ -14,7 +14,6 @@ struct FormView: View {
     @FocusState private var focus: FieldType?
     @ScaledMetric(relativeTo: .body) var scaledPadding: CGFloat = 8
     
-    private let durationAndDelay: CGFloat = 0.15
     @State private var cardRotation: Double = 0
     
     var body: some View {
@@ -155,32 +154,15 @@ private extension FormView {
         @Bindable var bindState = creditCardState
         
         VStack(spacing: 18) {
-            CustomField(
+            CustomFieldWrapper(
                 fieldType: .nameOnCard,
-                text: $bindState.nameOnCard,
-                placeholder: "Name on Card",
-                onEditingChanged: { isEditing in
-                    if isEditing {
-                        focus = .nameOnCard
-                    }
-                }
             )
             .focused($focus, equals: .nameOnCard)
-            .fieldBorder(focused: focus == .nameOnCard)
-            
-            CustomField(
+
+            CustomFieldWrapper(
                 fieldType: .cardNumber,
-                text: $bindState.cardNumber,
-                placeholder: "Card Number",
-                onEditingChanged: { isEditing in
-                    if isEditing {
-                        focus = .cardNumber
-                    }
-                }
             )
             .focused($focus, equals: .cardNumber)
-            .fieldBorder(focused: focus == .cardNumber)
-            .environment(creditCardState)
                 
             ViewThatFits(in: .horizontal) {
                 HStack {
@@ -205,7 +187,7 @@ private extension FormView {
                         .padding(6)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isFormSubmitting)
+                .disabled(creditCardState.isFormInvalid || isFormSubmitting)
             }
             .padding(.vertical)
         }
@@ -235,33 +217,17 @@ private extension FormView {
     @ViewBuilder var horizontalForm: some View {
         @Bindable var bindState = creditCardState
         
-        CustomField(
-            fieldType: .cvv,
-            text: $bindState.cvv,
-            placeholder: "CVV",
-            onEditingChanged: { isEditing in
-                creditCardState.flipCard()
-                if isEditing {
-                    focus = .cvv
-                }
-            }
-        )
+        CustomFieldWrapper(
+            fieldType: .cvv
+        ) { _ in
+            creditCardState.flipCard()
+        }
         .focused($focus, equals: .cvv)
-        .fieldBorder(focused: focus == .cvv)
-        .environment(creditCardState)
         
-        CustomField(
-            fieldType: .expirationDate,
-            text: $bindState.expirationDate,
-            placeholder: "Expiration",
-            onEditingChanged: { isEditing in
-                if isEditing {
-                    focus = .expirationDate
-                }
-            }
+        CustomFieldWrapper(
+            fieldType: .expirationDate
         )
         .focused($focus, equals: .expirationDate)
-        .fieldBorder(focused: focus == .expirationDate)
     }
 }
 
