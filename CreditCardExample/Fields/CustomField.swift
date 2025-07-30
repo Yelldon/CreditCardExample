@@ -48,6 +48,10 @@ struct CustomField: UIViewRepresentable {
         uiView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         uiView.setContentCompressionResistancePriority(.defaultHigh, for: .vertical)
         
+        // The placeholder may change in the middle of editing the fields,
+        // so we change that here.
+        uiView.placeholder = placeholder
+        
         if uiView.text != text {
             let cursorPosition = uiView.selectedTextRange
             uiView.text = text
@@ -208,154 +212,5 @@ extension CustomField.Coordinator {
                 }
             }
         }
-    }
-
-// Keeping these for reference until I add in the rest of the validation
-//    private func validateFieldContent(_ text: String, for fieldType: FieldType, cardType: CreditCardType) -> FieldErrors? {
-//        switch fieldType {
-//        case .cardNumber:
-//            return validateCardNumber(text, cardType: cardType)
-//        case .expirationDate:
-//            return validateExpirationDate(text)
-//        case .cvv:
-//            return validateCVV(text, cardType: cardType)
-//        case .nameOnCard:
-//            return validateNameOnCard(text)
-//        }
-//    }
-//    
-//    private func validateCardNumber(_ text: String, cardType: CreditCardType) -> FieldErrors? {
-//        let digits = text.filter { $0.isNumber }
-//        
-//        if digits.isEmpty {
-//            return .required
-//        }
-//        
-//        let expectedLength = maxDigitsForCardType(cardType)
-//        if digits.count < expectedLength {
-//            return .notEnoughDigits
-//        }
-//        
-//        return nil // Valid
-//    }
-//    
-//    private func validateExpirationDate(_ text: String) -> FieldErrors? {
-//        let digits = text.filter { $0.isNumber }
-//        
-//        if digits.isEmpty {
-//            return .required
-//        }
-//        
-//        if digits.count < 4 {
-//            return .notEnoughDigits
-//        }
-//        
-//        let month = Int(String(digits.prefix(2))) ?? 0
-//        let year = Int(String(digits.suffix(2))) ?? 0
-//        let currentYear = Calendar.current.component(.year, from: Date()) % 100
-//        let currentMonth = Calendar.current.component(.month, from: Date())
-//        
-//        if month < 1 || month > 12 {
-//            return .dateInvalid
-//        }
-//        
-//        if year < currentYear || (year == currentYear && month < currentMonth) {
-//            return .dateExpired
-//        }
-//        
-//        return nil // Valid
-//    }
-//    
-//    private func validateCVV(_ text: String, cardType: CreditCardType) -> FieldErrors? {
-//        let digits = text.filter { $0.isNumber }
-//        
-//        if digits.isEmpty {
-//            return .required
-//        }
-//        
-//        let expectedLength = cvvLengthForCardType(cardType)
-//        if digits.count < expectedLength {
-//            return .notEnoughDigits
-//        }
-//        
-//        return nil // Valid
-//    }
-//    
-//    private func validateNameOnCard(_ text: String) -> FieldErrors? {
-//        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-//        
-//        if trimmed.isEmpty {
-//            return .required
-//        }
-//        
-//        if trimmed.count < 2 {
-//            return .notEnoughDigits
-//        }
-//        
-//        return nil // Valid
-//    }
-    
-    // MARK: Card Type Detection and Formatting
-    private func cvvLengthForCardType(_ cardType: CreditCardType) -> Int {
-        switch cardType {
-        case .americanExpress:
-            return 4 // American Express uses 4-digit CVV
-        default:
-            return 3 // Most cards use 3-digit CVV
-        }
-    }
-    
-    private func maxDigitsForCardType(_ cardType: CreditCardType) -> Int {
-        switch cardType {
-        case .americanExpress:
-            return 15
-        case .dinersClub:
-            return 14
-        case .visa, .mastercard, .discover:
-            return 16
-        case .unknown:
-            return 16 // Default to 16 for unknown cards
-        }
-    }
-    
-    private func formatCardNumber(_ digits: String, for cardType: CreditCardType) -> String {
-        switch cardType {
-        case .americanExpress:
-            // American Express: 4-6-5 format
-            return formatAmericanExpress(digits)
-        case .dinersClub:
-            // Diners Club: 4-6-4 format
-            return formatDinersClub(digits)
-        case .visa, .mastercard, .discover, .unknown:
-            // Standard: 4-4-4-4 format
-            return formatStandard(digits)
-        }
-    }
-    
-    private func formatStandard(_ digits: String) -> String {
-        // Format as 4-4-4-4
-        return digits.enumerated().map { index, char in
-            index > 0 && index % 4 == 0 ? " \(char)" : "\(char)"
-        }.joined()
-    }
-    
-    private func formatAmericanExpress(_ digits: String) -> String {
-        // Format as 4-6-5 (spaces after positions 4 and 10)
-        return digits.enumerated().map { index, char in
-            if index == 4 || index == 10 {
-                return " \(char)"
-            }
-            return "\(char)"
-        }.joined()
-    }
-    
-    private func formatDinersClub(_ digits: String) -> String {
-        // Format as 4-6-4 (spaces after positions 4 and 10)
-        return digits.enumerated().map { index, char in
-            if index == 4 || index == 10 {
-                return " \(char)"
-            }
-            return "\(char)"
-        }.joined()
     }
 }

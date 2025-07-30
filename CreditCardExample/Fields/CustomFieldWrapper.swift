@@ -53,6 +53,13 @@ struct CustomFieldWrapper: View {
                 // Handle all the field validation here
                 handleFieldValidation(newValue)
             }
+            .onChange(of: creditCardState.isComplete) { oldValue, newValue in
+                // This handles resetting the field errors back to initial when
+                // For submit has been complete.
+                if oldValue && !newValue {
+                    field.error.wrappedValue = .initial
+                }
+            }
         }
         .animation(.easeInOut, value: hasError)
     }
@@ -77,7 +84,8 @@ extension CustomFieldWrapper {
     var placeholder: String {
         switch fieldType {
         case .cvv:
-            return "CVV"
+            let cardType = creditCardState.checkCreditCardType
+            return cardType == .americanExpress ? "CID" : "CVV"
         case .expirationDate:
             return "Expiration"
         case .cardNumber:
@@ -110,11 +118,15 @@ extension CustomFieldWrapper {
         case .required:
             return "\(placeholder) is required."
         case .notEnoughDigits:
-            return "Not enough digits."
+            return getNotEnoughDigitsMessage()
         case .dateExpired:
             return "Card has expired."
         case .dateInvalid:
             return "The date is invalid."
+        case .invalidCardNumber:
+            return "Invalid card number."
+        case .nameTooLong:
+            return "Name is too long (max 36 characters)."
         default:
             return "Unknown error."
         }
@@ -124,14 +136,109 @@ extension CustomFieldWrapper {
 // MARK: Field Validation
 private extension CustomFieldWrapper {
     func handleFieldValidation(_ text: String) {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Check if field is empty first
+        guard !trimmedText.isEmpty else {
             field.error.wrappedValue = .required
             onValidation?()
             return
         }
         
-        field.error.wrappedValue = nil
+        // Perform field-specific validation
+        let validationResult = validateFieldContent(trimmedText)
+        field.error.wrappedValue = validationResult
         onValidation?()
+    }
+    
+    func getNotEnoughDigitsMessage() -> String {
+        switch fieldType {
+        case .cardNumber:
+            let cardType = creditCardState.checkCreditCardType
+            let expectedLength = maxDigitsForCardType(cardType)
+            return "Card number must be \(expectedLength) digits."
+        case .expirationDate:
+            return "Enter a valid MM/YY date."
+        case .cvv:
+            let cardType = creditCardState.checkCreditCardType
+            let expectedLength = cvvLengthForCardType(cardType)
+            let codeType = cardType == .americanExpress ? "CID" : "CVV"
+            return "\(codeType) must be \(expectedLength) digits."
+        case .nameOnCard:
+            return "Name must be at least 2 characters."
+        }
+    }
+    
+    func validateFieldContent(_ text: String) -> FieldError? {
+        switch fieldType {
+        case .cardNumber:
+            return validateCardNumber(text)
+        case .expirationDate:
+            return validateExpirationDate(text)
+        case .cvv:
+            return validateCVV(text)
+        case .nameOnCard:
+            return validateNameOnCard(text)
+        }
+    }
+    
+    func validateCardNumber(_ text: String) -> FieldError? {
+        let digits = text.filter { $0.isNumber }
+        let cardType = creditCardState.checkCreditCardType
+        let expectedLength = maxDigitsForCardType(cardType)
+        
+        if digits.count < expectedLength {
+            return .notEnoughDigits
+        }
+        
+        return nil // Valid
+    }
+    
+    func validateExpirationDate(_ text: String) -> FieldError? {
+        let digits = text.filter { $0.isNumber }
+        
+        if digits.count < 4 {
+            return .notEnoughDigits
+        }
+        
+        let month = Int(String(digits.prefix(2))) ?? 0
+        let year = Int(String(digits.suffix(2))) ?? 0
+        let currentYear = Calendar.current.component(.year, from: Date()) % 100
+        let currentMonth = Calendar.current.component(.month, from: Date())
+        
+        if month < 1 || month > 12 {
+            return .dateInvalid
+        }
+        
+        if year < currentYear || (year == currentYear && month < currentMonth) {
+            return .dateExpired
+        }
+        
+        return nil // Valid
+    }
+    
+    func validateCVV(_ text: String) -> FieldError? {
+        let digits = text.filter { $0.isNumber }
+        let cardType = creditCardState.checkCreditCardType
+        let expectedLength = cvvLengthForCardType(cardType)
+        
+        if digits.count < expectedLength {
+            return .notEnoughDigits
+        }
+        
+        return nil // Valid
+    }
+    
+    func validateNameOnCard(_ text: String) -> FieldError? {
+        if text.count < 2 {
+            return .notEnoughDigits
+        }
+        
+        if text.count > 36 {
+            return .nameTooLong
+        }
+        
+        return nil // Valid
     }
 }
 

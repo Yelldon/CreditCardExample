@@ -30,4 +30,6 @@ enum FieldError {
     case notEnoughDigits
     case dateExpired
     case dateInvalid
+    case invalidCardNumber
+    case nameTooLong
 }

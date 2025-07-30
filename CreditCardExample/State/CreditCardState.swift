@@ -91,9 +91,7 @@ extension CreditCardState {
             number += String(Int.random(in: 0...9))
         }
         
-        cardNumber.text = number.enumerated().map { index, char in
-            index > 0 && index % 4 == 0 ? " \(char)" : "\(char)"
-        }.joined()
+        cardNumber.text = formatCardNumber(number, for: randomType)
         
         nameOnCard.text = "John Doe"
         
@@ -109,29 +107,6 @@ extension CreditCardState {
         } else {
             cvv.text = String(format: "%03d", Int.random(in: 100...999))
         }
-    }
-    
-    func flipCard() {
-        isFlipped.toggle()
-    }
-    
-    func formSubmit() {
-        isSubmitting = true
-    }
-    
-    func formComplete() {
-        isComplete = true
-    }
-    
-    func resetFormSubmit() {
-        isSubmitting = false
-        isComplete = false
-        
-        // Reset the fields
-        cardNumber.reset()
-        expirationDate.reset()
-        cvv.reset()
-        nameOnCard.reset()
     }
     
     var allFieldsEmpty: Bool {
@@ -155,5 +130,28 @@ extension CreditCardState {
             cvv.error,
             nameOnCard.error
         ].compactMap(\.self).count
+    }
+    
+    func flipCard() {
+        isFlipped.toggle()
+    }
+    
+    func formSubmit() {
+        isSubmitting = true
+    }
+    
+    func formComplete() {
+        isComplete = true
+    }
+    
+    func resetFormSubmit() {
+        isSubmitting = false
+        isComplete = false
+        
+        // Reset the fields
+        cardNumber.reset()
+        expirationDate.reset()
+        cvv.reset()
+        nameOnCard.reset()
     }
 }
