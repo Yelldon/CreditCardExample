@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct CardReaderView: View {
-    @State var creditCardState = CreditCardState.shared
+    @Environment(CreditCardState.self) var creditCardState
+    
     @State var submitionIndex: Int = 0
     
     var body: some View {
@@ -67,23 +68,21 @@ extension CardReaderView {
 // MARK: Functions
 extension CardReaderView {
     func runSubmitLight(index: Int) {
+        // This would normally be an API request to submit the data
+        // But since this is just "mock data", it's all happening after an animation completes
         if index < 4 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                debugPrint("We ran the submit light, index is \(index)")
                 submitionIndex += 1
                 runSubmitLight(index: submitionIndex)
             }
         } else if index == 4 {
-            creditCardState.isComplete.toggle()
+            // This would normally happen when the API completes successfully
+            creditCardState.formComplete()
         }
     }
 }
 
 #Preview {
-    @Previewable @State var creditCardState = CreditCardState()
-
-    CardReaderView(creditCardState: creditCardState)
-        .onAppear {
-            creditCardState.isSubmitting = true
-        }
+    CardReaderView()
+        .environment(MockData.baseCreditCardState)
 }

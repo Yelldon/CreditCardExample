@@ -9,19 +9,53 @@ import Foundation
 import Observation
 
 @Observable
-class CreditCardState {
-    static let shared = CreditCardState()
-     
-    var cardNumber: String = ""
-    var expirationDate: String = ""
-    var cvv: String = ""
-    var nameOnCard: String = ""
+final class CreditCardState {
+    var cardNumber: FieldInfo = FieldInfo()
+    var expirationDate: FieldInfo = FieldInfo()
+    var cvv: FieldInfo = FieldInfo()
+    var nameOnCard: FieldInfo = FieldInfo()
     
+    var isFlipped: Bool = false
     var isSubmitting: Bool = false
     var isComplete: Bool = false
 }
 
+// MARK: Helpers
 extension CreditCardState {
+    /// Check the credit card type
+    var checkCreditCardType: CreditCardType {
+        let digits = cardNumber.text.filter { $0.isNumber }
+        guard !digits.isEmpty else { return .unknown }
+        
+        let firstDigit = String(digits.prefix(1))
+        let firstTwo = String(digits.prefix(2))
+        let firstFour = String(digits.prefix(4))
+        
+        switch firstDigit {
+        case "4":
+            return .visa
+        case "5":
+            if ["51", "52", "53", "54", "55"].contains(firstTwo) {
+                return .mastercard
+            }
+        case "3":
+            if ["34", "37"].contains(firstTwo) {
+                return .americanExpress
+            } else if firstTwo == "30" || firstTwo == "36" || firstTwo == "38" {
+                return .dinersClub
+            }
+        case "6":
+            if firstFour == "6011" || firstTwo == "65" {
+                return .discover
+            }
+        default:
+            return .unknown
+        }
+        
+        return .unknown
+    }
+    
+    /// Generate a random credit card number and related information
     func generateRandomCreditCard() {
         let cardTypes: [CreditCardType] = [.visa, .mastercard, .americanExpress, .discover, .dinersClub]
         let randomType = cardTypes.randomElement() ?? .visa
@@ -57,24 +91,57 @@ extension CreditCardState {
             number += String(Int.random(in: 0...9))
         }
         
-        cardNumber = number.enumerated().map { index, char in
-            index > 0 && index % 4 == 0 ? " \(char)" : "\(char)"
-        }.joined()
+        cardNumber.text = formatCardNumber(number, for: randomType)
         
-        nameOnCard = "John Doe"
+        nameOnCard.text = "John Doe"
         
         // Generate random expiration date (future date)
         let currentYear = Calendar.current.component(.year, from: Date()) % 100
         let randomMonth = Int.random(in: 1...12)
         let randomYear = Int.random(in: currentYear...(currentYear + 5))
-        expirationDate = String(format: "%02d/%02d", randomMonth, randomYear)
+        expirationDate.text = String(format: "%02d/%02d", randomMonth, randomYear)
         
         // Generate random CVV
-        cvv = String(format: "%03d", Int.random(in: 100...999))
+        if randomType == .americanExpress {
+            cvv.text = String(format: "%04d", Int.random(in: 100...999))
+        } else {
+            cvv.text = String(format: "%03d", Int.random(in: 100...999))
+        }
+    }
+    
+    var allFieldsEmpty: Bool {
+        cardNumber.text.isEmpty ||
+        expirationDate.text.isEmpty ||
+        cvv.text.isEmpty ||
+        nameOnCard.text.isEmpty
+    }
+    
+    var allFieldsValid: Bool {
+        cardNumber.error == nil &&
+        expirationDate.error == nil &&
+        cvv.error == nil &&
+        nameOnCard.error == nil
+    }
+    
+    var validationErrorCount: Int {
+        [
+            cardNumber.error,
+            expirationDate.error,
+            cvv.error,
+            nameOnCard.error
+        ].compactMap(\.self).count
+    }
+    
+    func flipCard() {
+        isFlipped.toggle()
     }
     
     func formSubmit() {
         isSubmitting = true
+    }
+    
+    func formComplete() {
+        isComplete = true
     }
     
     func resetFormSubmit() {
@@ -82,9 +149,9 @@ extension CreditCardState {
         isComplete = false
         
         // Reset the fields
-        cardNumber = ""
-        expirationDate = ""
-        cvv = ""
-        nameOnCard = ""
+        cardNumber.reset()
+        expirationDate.reset()
+        cvv.reset()
+        nameOnCard.reset()
     }
 }

@@ -8,13 +8,14 @@
 import SwiftUI
 
 extension View {
-    func fieldBorder(focused: Bool) -> some View {
+    func fieldBorder(borderColor: Color) -> some View {
         self
             .padding(8)
+            .background(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(focused ? .blue : .secondary, lineWidth: 2)
+                    .stroke(borderColor, lineWidth: 2)
             )
-            .frame(maxHeight: 40)
     }
 }

@@ -8,174 +8,34 @@
 import SwiftUI
 
 struct FormView: View {
-    @State var creditCardState = CreditCardState.shared
-    @State var isFlipped: Bool = false
+    @Environment(CreditCardState.self) var creditCardState
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
+    @State private var cardRotation: Double = 0
     
     @FocusState private var focus: FieldType?
-    @ScaledMetric(relativeTo: .body) var scaledPadding: CGFloat = 8
     
-    private let durationAndDelay: CGFloat = 0.15
-    @State private var cardRotation: Double = 0
+    private var formSpacing: CGFloat = 20
     
     var body: some View {
         ZStack {
-            GeometryReader { geometry in
-                ScrollView {
-                    ZStack {
-                        GeometryReader { proxy in
-                            CardReaderView()
-                                .position(
-                                    x: geometry.size.width / 2,
-                                    y: isFormSubmitting ? geometry.size.height - geometry.size.height / 2 : -300
-                                )
-                                .animation(.spring.speed(0.8), value: isFormSubmitting)
-                                .frame(height: isFormSubmitting ? proxy.size.height : 0)
-                        }
-                        
-                        VStack {
-                            Text("Submitting card...")
-                                .font(.title)
-                                .bold()
-                                .foregroundStyle(.indigo)
-                                .offset(y: 40)
-                                .padding(.top)
-                        }
-                        .opacity(
-                            isFormSubmitting && !isFormComplete ? 1 : 0
-                        )
-                        .transition(.opacity)
-                        .offset(y: geometry.size.height / 2 + 50)
-                        .animation(.easeIn.delay(0.4), value: isFormSubmitting)
-                        .zIndex(4)
-                        
-                        VStack {
-                            CreditCardView(
-                                isFlipped: isFlipped
-                            )
-                            .rotationEffect(
-                                .degrees(cardRotation)
-                            )
-                            .offset(
-                                y: isFormSubmitting ? geometry.size.height / 2 - 80 : 0
-                            )
-                            .transition(.scale)
-                            .zIndex(3)
-                        }
-                        .animation(.spring, value: isFormSubmitting)
-                    }
-                    .blur(radius: isFormComplete ? 32 : 0)
-                    .animation(.spring, value: isFormComplete)
-                    .zIndex(2)
-                    
-                    VStack {
-                        VStack {
-                            Button(action: {
-                                generateRandomCreditCard()
-                            }) {
-                                Text("Generate Credit Card")
-                                    .font(.callout)
-                                    .frame(maxWidth: .infinity)
-                                    .foregroundStyle(Color.blue)
-                                    .padding(scaledPadding)
-                                    .minimumScaleFactor(0.85)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(1)
-                            }
-                            .buttonStyle(.plain)
-                            
-                            Group {
-                                CustomField(
-                                    fieldType: .nameOnCard,
-                                    text: $creditCardState.nameOnCard,
-                                    placeholder: "Name on Card",
-                                    onEditingChanged: { isEditing in
-                                        if isEditing {
-                                            focus = .nameOnCard
-                                        }
-                                    }
-                                )
-                                .focused($focus, equals: .nameOnCard)
-                                .fieldBorder(focused: focus == .nameOnCard)
-                                
-                                CustomField(
-                                    fieldType: .cardNumber,
-                                    text: $creditCardState.cardNumber,
-                                    placeholder: "Card Number",
-                                    onEditingChanged: { isEditing in
-                                        if isEditing {
-                                            focus = .cardNumber
-                                        }
-                                    }
-                                )
-                                .focused($focus, equals: .cardNumber)
-                                .fieldBorder(focused: focus == .cardNumber)
-                                
-                                HStack {
-                                    CustomField(
-                                        fieldType: .cvv,
-                                        text: $creditCardState.cvv,
-                                        placeholder: "CVV",
-                                        onEditingChanged: { isEditing in
-                                            isFlipped.toggle()
-                                            if isEditing {
-                                                focus = .cvv
-                                            }
-                                        }
-                                    )
-                                    .focused($focus, equals: .cvv)
-                                    .fieldBorder(focused: focus == .cvv)
-                                    .padding(.trailing, 8)
-                                    Spacer()
-                                    
-                                    CustomField(
-                                        fieldType: .expirationDate,
-                                        text: $creditCardState.expirationDate,
-                                        placeholder: "Expiration",
-                                        onEditingChanged: { isEditing in
-                                            if isEditing {
-                                                focus = .expirationDate
-                                            }
-                                        }
-                                    )
-                                    .focused($focus, equals: .expirationDate)
-                                    .fieldBorder(focused: focus == .expirationDate)
-                                }
-                            }
-                            .padding(.vertical, scaledPadding)
-                            
-                            VStack {
-                                Button(action: {
-                                    debugPrint("Credit Card Submitted")
-                                    focus = nil
-                                    randomRotation()
-                                    creditCardState.formSubmit()
-                                }) {
-                                    Text("Submit")
-                                        .font(.title3)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(6)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .disabled(isFormSubmitting)
-                            }
-                            .padding(.vertical)
-                        }
-                        .blur(radius: isFormSubmitting ? 8 : 0)
-                        .animation(.easeInOut, value: isFormSubmitting)
-                        .accessibilityHidden(isFormSubmitting)
-                    }
-                    .padding()
-                    .zIndex(1)
+            ZStack {
+                if isWideLayout {
+                    horizontalLayout
+                } else {
+                    verticalLayout
                 }
-                .scrollDisabled(isFormSubmitting)
             }
+            .animation(.easeInOut.speed(2), value: validationErrorTotal)
             
             CompletionModalView()
         }
         .onAppear {
+            // Sets the focus on the initial view
             focus = .nameOnCard
         }
         .onChange(of: isFormComplete) { _, isComplete in
+            // Reset the card positioning when the form was complete
             if !isComplete {
                 cardRotation = 0
             }
@@ -184,7 +44,11 @@ struct FormView: View {
 }
 
 // MARK: Variables
-extension FormView {
+private extension FormView {
+    var isWideLayout: Bool {
+        horizontalSizeClass == .regular
+    }
+    
     var isFormSubmitting: Bool {
         creditCardState.isSubmitting
     }
@@ -192,10 +56,200 @@ extension FormView {
     var isFormComplete: Bool {
         creditCardState.isComplete
     }
+    
+    var formInvalid: Bool {
+        guard !creditCardState.allFieldsEmpty else {
+            return true
+        }
+        
+        return !creditCardState.allFieldsValid
+    }
+    
+    var validationErrorTotal: Int {
+        creditCardState.validationErrorCount
+    }
+}
+
+// MARK: Views
+private extension FormView {
+    func baseViewStyle(geometry: GeometryProxy) -> some View {
+        VStack {
+            ZStack(alignment: .top) {
+                ZStack {
+                    GeometryReader { proxy in
+                        CardReaderView()
+                            .position(
+                                x: geometry.size.width / 2,
+                                y: isFormSubmitting ? geometry.size.height - geometry.size.height / 2 : -400
+                            )
+                            .animation(.spring.speed(0.8), value: isFormSubmitting)
+                            .frame(height: isFormSubmitting ? proxy.size.height : 0)
+                            .opacity(isFormSubmitting ? 1 : 0)
+                    }
+                }
+                
+                VStack {
+                    Text("Submitting card...")
+                        .font(.title)
+                        .bold()
+                        .foregroundStyle(.indigo)
+                        .offset(y: 100)
+                        .padding(.top)
+                }
+                .opacity(isFormSubmitting && !isFormComplete ? 1 : 0)
+                .transition(.opacity)
+                .offset(
+                    x: isWideLayout ? geometry.size.width / 4 : 0,
+                    y: geometry.size.height / 2 + 50
+                )
+                .animation(.easeIn.delay(0.4), value: isFormSubmitting)
+                .zIndex(4)
+                
+                ZStack {
+                    VStack {
+                        VStack {
+                            CreditCardView()
+                                .rotationEffect(.degrees(cardRotation))
+                                .offset(
+                                    x: isFormSubmitting ?
+                                    (isWideLayout ? geometry.size.width / 4 : 0) : 0,
+                                    y: isFormSubmitting ? geometry.size.height / 2 - 80 : 0
+                                )
+                                .transition(.slide)
+                                .zIndex(3)
+                        }
+                        .animation(.spring.delay(0.3), value: isFormSubmitting)
+                        .zIndex(2)
+                        
+                        generateRandomCardButton
+                            .animation(.easeInOut, value: isFormSubmitting)
+                            .zIndex(1)
+                    }
+                }
+            }
+            .blur(radius: isFormComplete ? 32 : 0)
+            .animation(.spring, value: isFormComplete)
+        }
+        .zIndex(2)
+    }
+    
+    var horizontalLayout: some View {
+        GeometryReader { geometry in
+            HStack(alignment: .center) {
+                baseViewStyle(geometry: geometry)
+                    
+                ScrollView {
+                    HStack {
+                        formContent
+                            .animation(.easeInOut.speed(2), value: validationErrorTotal)
+                    }
+                    .padding()
+                    .zIndex(1)
+                }
+                .scrollDisabled(isFormSubmitting)
+            }
+            .padding(.top)
+        }
+    }
+    
+    var verticalLayout: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                baseViewStyle(geometry: geometry)
+                
+                VStack {
+                    formContent
+                        .animation(.easeInOut.speed(2), value: validationErrorTotal)
+                }
+                .padding()
+                .zIndex(1)
+            }
+            .scrollDisabled(isFormSubmitting)
+        }
+    }
+    
+    @ViewBuilder private var formContent: some View {
+        VStack(spacing: formSpacing) {
+            CustomFieldWrapper(
+                fieldType: .nameOnCard
+            )
+            .focused($focus, equals: .nameOnCard)
+
+            CustomFieldWrapper(
+                fieldType: .cardNumber
+            )
+            .focused($focus, equals: .cardNumber)
+                
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: formSpacing) {
+                    horizontalForm
+                }
+                
+                VStack(spacing: formSpacing) {
+                    horizontalForm
+                }
+            }
+            
+            VStack {
+                Button(action: {
+                    debugPrint("Credit Card Submitted")
+                    focus = nil
+                    randomRotation()
+                    creditCardState.formSubmit()
+                }) {
+                    Text("Submit")
+                        .font(.title3)
+                        .frame(maxWidth: .infinity)
+                        .padding(6)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(formInvalid || isFormSubmitting)
+            }
+            .padding(.vertical)
+        }
+        .blur(radius: isFormSubmitting ? 8 : 0)
+        .animation(.easeInOut, value: isFormSubmitting)
+        .animation(.easeInOut.speed(2), value: formInvalid)
+        .accessibilityHidden(isFormSubmitting)
+    }
+    
+    var generateRandomCardButton: some View {
+        Button(action: {
+            generateRandomCreditCard()
+        }) {
+            Text("Generate Credit Card")
+                .font(.callout)
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(Color.blue)
+                .padding(.top)
+                .padding(.horizontal)
+                .minimumScaleFactor(0.75)
+                .multilineTextAlignment(.leading)
+                .lineLimit(1)
+        }
+        .buttonStyle(.plain)
+        .opacity(isFormSubmitting ? 0 : 1)
+        .accessibilityHidden(isFormSubmitting)
+    }
+    
+    @ViewBuilder var horizontalForm: some View {
+        CustomFieldWrapper(
+            fieldType: .cvv,
+            onValidation: nil
+        ) { _ in
+            creditCardState.flipCard()
+        }
+        .focused($focus, equals: .cvv)
+        
+        CustomFieldWrapper(
+            fieldType: .expirationDate
+        )
+        .focused($focus, equals: .expirationDate)
+    }
 }
 
 // MARK: Functions
-extension FormView {
+private extension FormView {
     func generateRandomCreditCard() {
         creditCardState.generateRandomCreditCard()
         
@@ -207,29 +261,7 @@ extension FormView {
     }
 }
 
-struct ConditionalPositionModifier: ViewModifier {
-    let shouldApply: Bool
-    let x: CGFloat
-    let y: CGFloat
-    
-    func body(content: Content) -> some View {
-        if shouldApply {
-            content.position(x: x, y: y)
-        } else {
-            content
-        }
-    }
-}
-
-enum CreditCardType {
-    case visa
-    case mastercard
-    case americanExpress
-    case dinersClub
-    case discover
-    case unknown
-}
-
 #Preview {
     FormView()
+        .environment(MockData.emptyCreditCardState)
 }

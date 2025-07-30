@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CompletionModalView: View {
-    @State var creditCardState = CreditCardState.shared
+    @Environment(CreditCardState.self) var creditCardState
     
     var body: some View {
         ZStack {
@@ -49,11 +49,6 @@ extension CompletionModalView {
 }
 
 #Preview {
-    @Previewable @State var creditCardState = CreditCardState()
-    
-    CompletionModalView(creditCardState: creditCardState)
-        .onAppear {
-            creditCardState.isSubmitting = true
-            creditCardState.isComplete = true
-        }
+    CompletionModalView()
+        .environment(MockData.completeCreditCardState)
 }

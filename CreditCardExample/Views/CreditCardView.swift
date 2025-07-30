@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct CreditCardView: View {
-    @State var creditCardState = CreditCardState.shared
-    var isFlipped: Bool = false
+    @Environment(CreditCardState.self) var creditCardState
     
     @State private var frontDegree = 0.0
     @State private var backDegree = 90.0
@@ -32,7 +31,7 @@ struct CreditCardView: View {
                         
                         
                         HStack(alignment: .center) {
-                            Text(creditCardState.nameOnCard)
+                            Text(creditCardState.nameOnCard.text)
                                 .lineLimit(1)
                                 .bold()
                             
@@ -56,7 +55,7 @@ struct CreditCardView: View {
                                         .offset(x: -2, y: -3)
                                         .padding(8)
                                 }
-                                .animation(.easeInOut.speed(1.5), value: checkCreditCardType)
+                                .animation(.easeInOut.speed(1.5), value: checkCardType)
                             }
                         }
                         .offset(x: 20, y: 35)
@@ -76,7 +75,7 @@ struct CreditCardView: View {
                                 .foregroundStyle(Color.white)
                                 
                                 .overlay {
-                                    Text(creditCardState.cvv)
+                                    Text(creditCardState.cvv.text)
                                         .bold()
                                 }
                                 .frame(width: 70)
@@ -87,7 +86,7 @@ struct CreditCardView: View {
                     }
                 }
             }
-            .dynamicTypeSize(.large ... .large)
+            .dynamicTypeSize(.large)
             .padding(.vertical)
             .shadow(radius: 4, x: 0, y: 6)
             .transition(.opacity)
@@ -95,6 +94,14 @@ struct CreditCardView: View {
         .onChange(of: isFlipped) { _, _ in
             flipCard()
         }
+#if DEBUG
+        // We really only want this to run for previews
+        .onAppear {
+            if isFlipped {
+                flipCard()
+            }
+        }
+#endif
     }
 }
 
@@ -112,7 +119,7 @@ extension CreditCardView {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(.gray, lineWidth: 1)
             )
-            .animation(.easeInOut.speed(1.5), value: checkCreditCardType)
+            .animation(.easeInOut.speed(1.5), value: checkCardType)
             .overlay(alignment: .topLeading) {
                 if !isBack {
                     chipView
@@ -190,9 +197,18 @@ extension CreditCardView {
     }
 }
 
+// MARK: Variables
 extension CreditCardView {
+    var checkCardType: CreditCardType {
+        creditCardState.checkCreditCardType
+    }
+    
+    var isFlipped: Bool {
+        creditCardState.isFlipped
+    }
+    
     var creditCardColor: Color {
-        switch checkCreditCardType {
+        switch checkCardType {
             case .visa: return .blue
             case .mastercard: return .orange
             case .americanExpress: return .cyan
@@ -202,50 +218,8 @@ extension CreditCardView {
         }
     }
     
-    func cardTypeBaseImage(_ image: String) -> some View {
-        Image(image)
-            .resizable()
-            .scaledToFit()
-            .frame(width: 55)
-    }
-    
-    @ViewBuilder func cardTypeImage() -> some View {
-        switch checkCreditCardType {
-        case .visa:
-            cardTypeBaseImage("VisaImage")
-        case .mastercard:
-            cardTypeBaseImage("MasterCardImage")
-        case .americanExpress:
-            cardTypeBaseImage("AmericanExpressImage")
-        case .dinersClub:
-            cardTypeBaseImage("DinersClubImage")
-        case .discover:
-            cardTypeBaseImage("DiscoverImage")
-        default:
-            EmptyView()
-        }
-    }
-    
-    func flipCard() {
-        if isFlipped {
-            withAnimation(.easeInOut(duration: durationAndDelay)) {
-                frontDegree = 90.0
-            }
-            withAnimation(.bouncy(duration: durationAndDelay, extraBounce: 0.2).delay(durationAndDelay)) {
-                backDegree = 180.0
-            }
-        } else {
-            withAnimation(.easeInOut(duration: durationAndDelay)) {
-                backDegree = 90.0
-            }
-            withAnimation(.bouncy(duration: durationAndDelay, extraBounce: 0.2).delay(durationAndDelay)) {
-                frontDegree = 0.0
-            }
-        }
-    }
-    
     var redactedCreditCardNumber: String {
-        let digits = Array(creditCardState.cardNumber.filter { $0.isNumber })
+        let digits = Array(creditCardState.cardNumber.text.filter { $0.isNumber })
         
         // Always show 16 positions
         var result = Array(repeating: Character("#"), count: 16)
@@ -272,7 +246,7 @@ extension CreditCardView {
     }
     
     var visibleExperation: String {
-        let digits = Array(creditCardState.expirationDate.filter { $0.isNumber })
+        let digits = Array(creditCardState.expirationDate.text.filter { $0.isNumber })
         
         // Always show MM/YY format with dashes as placeholders
         var result = Array(repeating: Character("-"), count: 4)
@@ -286,65 +260,65 @@ extension CreditCardView {
         let formatted = String(result)
         return "\(formatted.prefix(2))/\(formatted.suffix(2))"
     }
-    
-    var checkCreditCardType: CreditCardType {
-        let digits = creditCardState.cardNumber.filter { $0.isNumber }
-        guard !digits.isEmpty else { return .unknown }
-        
-        let firstDigit = String(digits.prefix(1))
-        let firstTwo = String(digits.prefix(2))
-        let firstFour = String(digits.prefix(4))
-        
-        switch firstDigit {
-        case "4":
-            return .visa
-        case "5":
-            if ["51", "52", "53", "54", "55"].contains(firstTwo) {
-                return .mastercard
-            }
-        case "3":
-            if ["34", "37"].contains(firstTwo) {
-                return .americanExpress
-            } else if firstTwo == "30" || firstTwo == "36" || firstTwo == "38" {
-                return .dinersClub
-            }
-        case "6":
-            if firstFour == "6011" || firstTwo == "65" {
-                return .discover 
-            }
+}
+
+// MARK: Views
+extension CreditCardView {
+    @ViewBuilder func cardTypeImage() -> some View {
+        switch checkCardType {
+        case .visa:
+            cardTypeBaseImage("VisaImage")
+        case .mastercard:
+            cardTypeBaseImage("MasterCardImage")
+        case .americanExpress:
+            cardTypeBaseImage("AmericanExpressImage")
+        case .dinersClub:
+            cardTypeBaseImage("DinersClubImage")
+        case .discover:
+            cardTypeBaseImage("DiscoverImage")
         default:
-            return .unknown
+            EmptyView()
         }
-        
-        return .unknown
+    }
+}
+
+// MARK: Functions
+extension CreditCardView {
+    func cardTypeBaseImage(_ image: String) -> some View {
+        Image(image)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 55)
+    }
+    
+    func flipCard() {
+        if isFlipped {
+            withAnimation(.easeInOut(duration: durationAndDelay)) {
+                frontDegree = 90.0
+            }
+            withAnimation(.bouncy(duration: durationAndDelay, extraBounce: 0.2).delay(durationAndDelay)) {
+                backDegree = 180.0
+            }
+        } else {
+            withAnimation(.easeInOut(duration: durationAndDelay)) {
+                backDegree = 90.0
+            }
+            withAnimation(.bouncy(duration: durationAndDelay, extraBounce: 0.2).delay(durationAndDelay)) {
+                frontDegree = 0.0
+            }
+        }
     }
 }
 
 #Preview("Initial View") {
-    @Previewable @State var dynamicFlip: Bool = false
-    @Previewable @State var creditCardState = CreditCardState()
+    CreditCardView()
+        .environment(MockData.emptyCreditCardState)
     
-    CreditCardView(creditCardState: creditCardState)
-        .onAppear {
-            creditCardState.cardNumber = "1234 5678 9012 3456"
-            creditCardState.nameOnCard = "John Doe"
-            creditCardState.expirationDate = "12/24"
-        }
-    
-    CreditCardView(creditCardState: creditCardState, isFlipped: dynamicFlip)
-        .onAppear {
-            creditCardState.cvv = "123"
-            dynamicFlip.toggle()
-        }
+    CreditCardView()
+        .environment(MockData.flippedCreditCardState)
 }
 
 #Preview("Set View") {
-    @Previewable @State var creditCardState = CreditCardState()
-    
-    CreditCardView(creditCardState: creditCardState)
-        .onAppear {
-            creditCardState.cardNumber = "4111 5678 9012 3456"
-            creditCardState.nameOnCard = "John Doe"
-            creditCardState.expirationDate = "12/24"
-        }
+    CreditCardView()
+        .environment(MockData.baseCreditCardState)
 }
