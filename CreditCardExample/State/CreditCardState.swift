@@ -10,10 +10,10 @@ import Observation
 
 @Observable
 final class CreditCardState {
-    var cardNumber: String = ""
-    var expirationDate: String = ""
-    var cvv: String = ""
-    var nameOnCard: String = ""
+    var cardNumber: FieldInfo = FieldInfo()
+    var expirationDate: FieldInfo = FieldInfo()
+    var cvv: FieldInfo = FieldInfo()
+    var nameOnCard: FieldInfo = FieldInfo()
     
     var isFlipped: Bool = false
     var isSubmitting: Bool = false
@@ -24,7 +24,7 @@ final class CreditCardState {
 extension CreditCardState {
     /// Check the credit card type
     var checkCreditCardType: CreditCardType {
-        let digits = cardNumber.filter { $0.isNumber }
+        let digits = cardNumber.text.filter { $0.isNumber }
         guard !digits.isEmpty else { return .unknown }
         
         let firstDigit = String(digits.prefix(1))
@@ -91,23 +91,23 @@ extension CreditCardState {
             number += String(Int.random(in: 0...9))
         }
         
-        cardNumber = number.enumerated().map { index, char in
+        cardNumber.text = number.enumerated().map { index, char in
             index > 0 && index % 4 == 0 ? " \(char)" : "\(char)"
         }.joined()
         
-        nameOnCard = "John Doe"
+        nameOnCard.text = "John Doe"
         
         // Generate random expiration date (future date)
         let currentYear = Calendar.current.component(.year, from: Date()) % 100
         let randomMonth = Int.random(in: 1...12)
         let randomYear = Int.random(in: currentYear...(currentYear + 5))
-        expirationDate = String(format: "%02d/%02d", randomMonth, randomYear)
+        expirationDate.text = String(format: "%02d/%02d", randomMonth, randomYear)
         
         // Generate random CVV
         if randomType == .americanExpress {
-            cvv = String(format: "%04d", Int.random(in: 100...999))
+            cvv.text = String(format: "%04d", Int.random(in: 100...999))
         } else {
-            cvv = String(format: "%03d", Int.random(in: 100...999))
+            cvv.text = String(format: "%03d", Int.random(in: 100...999))
         }
     }
     
@@ -128,16 +128,32 @@ extension CreditCardState {
         isComplete = false
         
         // Reset the fields
-        cardNumber = ""
-        expirationDate = ""
-        cvv = ""
-        nameOnCard = ""
+        cardNumber.reset()
+        expirationDate.reset()
+        cvv.reset()
+        nameOnCard.reset()
     }
     
     var allFieldsEmpty: Bool {
-        cardNumber.isEmpty ||
-        expirationDate.isEmpty ||
-        cvv.isEmpty ||
-        nameOnCard.isEmpty
+        cardNumber.text.isEmpty ||
+        expirationDate.text.isEmpty ||
+        cvv.text.isEmpty ||
+        nameOnCard.text.isEmpty
+    }
+    
+    var allFieldsValid: Bool {
+        cardNumber.error == nil &&
+        expirationDate.error == nil &&
+        cvv.error == nil &&
+        nameOnCard.error == nil
+    }
+    
+    var validationErrorCount: Int {
+        [
+            cardNumber.error,
+            expirationDate.error,
+            cvv.error,
+            nameOnCard.error
+        ].compactMap(\.self).count
     }
 }

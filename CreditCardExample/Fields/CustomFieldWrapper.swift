@@ -11,11 +11,10 @@ struct CustomFieldWrapper: View {
     @Environment(CreditCardState.self) var creditCardState
     
     let fieldType: FieldType
-    var onValidation: ((FieldType, Bool) -> Void)?
+    var onValidation: (() -> Void)?
     var onEditingChanged: ((Bool) -> Void)?
     
     @State var focused: Bool = false
-    @State var error: FieldErrors? = .initial
     
     @ScaledMetric(relativeTo: .caption) var scaledOffset: CGFloat = 8
     
@@ -24,7 +23,7 @@ struct CustomFieldWrapper: View {
             VStack(alignment: .leading) {
                 CustomField(
                     fieldType: fieldType,
-                    text: text,
+                    text: field.text,
                     placeholder: placeholder,
                     onEditingChanged: { isEditing in
                         onEditingChanged?(isEditing)
@@ -50,20 +49,9 @@ struct CustomFieldWrapper: View {
                 }
                 .animation(.easeInOut.speed(3), value: hasError)
             }
-            .onChange(of: text.wrappedValue) { _, newValue in
-                guard !newValue.isEmpty else {
-                    error = .required
-                    onValidation?(fieldType, true)
-                    return
-                }
-                
-                error = nil
-                onValidation?(fieldType, false)
-            }
-            .onChange(of: creditCardState.isComplete) { oldValue, newValue in
-                if oldValue && !newValue {
-                    error = .initial
-                }
+            .onChange(of: field.text.wrappedValue) { _, newValue in
+                // Handle all the field validation here
+                handleFieldValidation(newValue)
             }
         }
         .animation(.easeInOut, value: hasError)
@@ -71,7 +59,7 @@ struct CustomFieldWrapper: View {
 }
 
 extension CustomFieldWrapper {
-    var text: Binding<String> {
+    var field: Binding<FieldInfo> {
         @Bindable var bindState = creditCardState
         
         switch fieldType {
@@ -108,28 +96,47 @@ extension CustomFieldWrapper {
     }
     
     var hasError: Bool {
-        guard error != .initial else {
+        guard field.error.wrappedValue != .initial else {
             return false
         }
         
-        return error != nil
+        return field.error.wrappedValue != nil
     }
     
     var errorMessage: String {
-        switch error {
+        switch field.error.wrappedValue {
         case .initial:
             return ""
         case .required:
             return "\(placeholder) is required."
+        case .notEnoughDigits:
+            return "Not enough digits."
+        case .dateExpired:
+            return "Card has expired."
+        case .dateInvalid:
+            return "The date is invalid."
         default:
             return "Unknown error."
         }
     }
 }
 
+// MARK: Field Validation
+private extension CustomFieldWrapper {
+    func handleFieldValidation(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            field.error.wrappedValue = .required
+            onValidation?()
+            return
+        }
+        
+        field.error.wrappedValue = nil
+        onValidation?()
+    }
+}
+
 #Preview {
     @Previewable var focused = true
-    @Previewable var error: FieldErrors = .required
 
     VStack(spacing: 24) {
         CustomFieldWrapper(
@@ -145,9 +152,8 @@ extension CustomFieldWrapper {
                 
         CustomFieldWrapper(
             fieldType: .nameOnCard,
-            error: error
         )
-        .environment(MockData.emptyCreditCardState)
+        .environment(MockData.creditCardErrorState)
     }
     .padding()
 }

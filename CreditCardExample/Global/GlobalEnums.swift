@@ -24,7 +24,7 @@ enum FieldType {
 }
 
 /// Field Errors
-enum FieldErrors {
+enum FieldError {
     case initial
     case required
     case notEnoughDigits

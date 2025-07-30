@@ -12,10 +12,10 @@ final class MockData {
     
     static var baseCreditCardState: CreditCardState {
         let state = CreditCardState()
-        state.cardNumber = "4111 5678 9012 3456"
-        state.nameOnCard = "John Doe"
-        state.expirationDate = "12/24"
-        state.cvv = "123"
+        state.cardNumber.text = "4111 5678 9012 3456"
+        state.nameOnCard.text = "John Doe"
+        state.expirationDate.text = "12/24"
+        state.cvv.text = "123"
         
         return state
     }
@@ -30,6 +30,14 @@ final class MockData {
     static var completeCreditCardState: CreditCardState {
         let state = baseCreditCardState
         state.isComplete = true
+        
+        return state
+    }
+    
+    static var creditCardErrorState: CreditCardState {
+        let state = emptyCreditCardState
+        state.nameOnCard.text = ""
+        state.nameOnCard.error = .required
         
         return state
     }

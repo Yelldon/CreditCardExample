@@ -31,7 +31,7 @@ struct CreditCardView: View {
                         
                         
                         HStack(alignment: .center) {
-                            Text(creditCardState.nameOnCard)
+                            Text(creditCardState.nameOnCard.text)
                                 .lineLimit(1)
                                 .bold()
                             
@@ -75,7 +75,7 @@ struct CreditCardView: View {
                                 .foregroundStyle(Color.white)
                                 
                                 .overlay {
-                                    Text(creditCardState.cvv)
+                                    Text(creditCardState.cvv.text)
                                         .bold()
                                 }
                                 .frame(width: 70)
@@ -219,7 +219,7 @@ extension CreditCardView {
     }
     
     var redactedCreditCardNumber: String {
-        let digits = Array(creditCardState.cardNumber.filter { $0.isNumber })
+        let digits = Array(creditCardState.cardNumber.text.filter { $0.isNumber })
         
         // Always show 16 positions
         var result = Array(repeating: Character("#"), count: 16)
@@ -246,7 +246,7 @@ extension CreditCardView {
     }
     
     var visibleExperation: String {
-        let digits = Array(creditCardState.expirationDate.filter { $0.isNumber })
+        let digits = Array(creditCardState.expirationDate.text.filter { $0.isNumber })
         
         // Always show MM/YY format with dashes as placeholders
         var result = Array(repeating: Character("-"), count: 4)

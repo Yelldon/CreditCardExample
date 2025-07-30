@@ -12,7 +12,6 @@ struct FormView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
     @State private var cardRotation: Double = 0
-    @State private var fieldErrors: [FieldType] = []
     
     @FocusState private var focus: FieldType?
     
@@ -27,7 +26,7 @@ struct FormView: View {
                     verticalLayout
                 }
             }
-            .animation(.easeInOut.speed(2), value: fieldErrors)
+            .animation(.easeInOut.speed(2), value: validationErrorTotal)
             
             CompletionModalView()
         }
@@ -63,7 +62,11 @@ private extension FormView {
             return true
         }
         
-        return !fieldErrors.isEmpty
+        return !creditCardState.allFieldsValid
+    }
+    
+    var validationErrorTotal: Int {
+        creditCardState.validationErrorCount
     }
 }
 
@@ -138,7 +141,7 @@ private extension FormView {
                 ScrollView {
                     HStack {
                         formContent
-                            .animation(.easeInOut.speed(2), value: fieldErrors)
+                            .animation(.easeInOut.speed(2), value: validationErrorTotal)
                     }
                     .padding()
                     .zIndex(1)
@@ -156,7 +159,7 @@ private extension FormView {
                 
                 VStack {
                     formContent
-                        .animation(.easeInOut.speed(2), value: fieldErrors)
+                        .animation(.easeInOut.speed(2), value: validationErrorTotal)
                 }
                 .padding()
                 .zIndex(1)
@@ -168,18 +171,12 @@ private extension FormView {
     @ViewBuilder private var formContent: some View {
         VStack(spacing: formSpacing) {
             CustomFieldWrapper(
-                fieldType: .nameOnCard,
-                onValidation: { field, value in
-                    setFormValidValue(field, value: value)
-                }
+                fieldType: .nameOnCard
             )
             .focused($focus, equals: .nameOnCard)
 
             CustomFieldWrapper(
-                fieldType: .cardNumber,
-                onValidation: { field, value in
-                    setFormValidValue(field, value: value)
-                }
+                fieldType: .cardNumber
             )
             .focused($focus, equals: .cardNumber)
                 
@@ -238,19 +235,14 @@ private extension FormView {
     @ViewBuilder var horizontalForm: some View {
         CustomFieldWrapper(
             fieldType: .cvv,
-            onValidation: { field, value in
-                setFormValidValue(field, value: value)
-            }
+            onValidation: nil
         ) { _ in
             creditCardState.flipCard()
         }
         .focused($focus, equals: .cvv)
         
         CustomFieldWrapper(
-            fieldType: .expirationDate,
-            onValidation: { field, value in
-                setFormValidValue(field, value: value)
-            }
+            fieldType: .expirationDate
         )
         .focused($focus, equals: .expirationDate)
     }
@@ -266,14 +258,6 @@ private extension FormView {
     
     func randomRotation() {
         cardRotation = Double(Int.random(in: -9...9))
-    }
-    
-    func setFormValidValue(_ fieldType: FieldType, value: Bool) {
-        if value {
-            fieldErrors.append(fieldType)
-        } else {
-            fieldErrors.removeAll(where: { $0 == fieldType })
-        }
     }
 }
 
